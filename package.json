@@ -1,0 +1,9 @@
+{
+  "name": "speakersync-party",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test sync.test.js room.test.js",
+    "start": "python3 -m http.server 8080"
+  }
+}

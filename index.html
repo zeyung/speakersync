@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SpeakerSync</title>
+<meta name="description" content="Play music in sync on every phone, tablet, laptop and speaker you have.">
+<meta name="theme-color" content="#f4f5f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0d12" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SpeakerSync">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.min.js"></script>
+</head>
+<body>
+
+<main id="start" class="screen">
+  <div class="hero">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#logo"/></svg></div>
+    <h1>SpeakerSync</h1>
+    <p>Play music in sync on every phone, tablet, laptop and speaker you have.</p>
+  </div>
+
+  <section class="card">
+    <label class="field">
+      <span>This device's name</span>
+      <input id="nameInput" maxlength="40" autocomplete="off">
+    </label>
+    <button class="primary big" id="hostButton">Start a room</button>
+    <div class="or"><span>or join one</span></div>
+    <form class="join" id="joinForm">
+      <input id="codeInput" inputmode="text" autocapitalize="characters" autocomplete="off" maxlength="6" placeholder="Room code" aria-label="Room code">
+      <button class="primary" id="joinButton">Join</button>
+    </form>
+    <p class="error" id="startError" hidden></p>
+  </section>
+
+  <section class="card how">
+    <h2>How it works</h2>
+    <ol>
+      <li><b>Connect your speakers.</b> Pair a Bluetooth speaker to any phone or laptop in its Settings, or just use the device's own speaker. Each device plays through whatever it's connected to.</li>
+      <li><b>Start a room on one device</b> and add songs. Everyone else scans the QR code or types the code.</li>
+      <li><b>Press play.</b> Every device plays in step. Tap <b>Auto-sync</b> once and SpeakerSync listens with a microphone to cancel out each speaker's Bluetooth delay.</li>
+    </ol>
+  </section>
+</main>
+
+<main id="room" class="screen" hidden>
+  <header class="bar">
+    <div>
+      <div class="code-label">Room</div>
+      <div class="code" id="roomCode">----</div>
+    </div>
+    <div class="status" id="connStatus"><span class="dot"></span><span>Connecting…</span></div>
+    <button class="ghost" id="leaveButton">Leave</button>
+  </header>
+
+  <div id="problems"></div>
+
+  <section class="card invite" id="inviteCard">
+    <div class="qr" id="qr" aria-label="QR code to join this room"></div>
+    <div class="invite-text">
+      <h2>Invite devices</h2>
+      <p>Scan with a phone's camera, or open <b id="inviteHost">this page</b> and enter <b id="inviteCode">----</b>.</p>
+      <div class="row">
+        <button id="shareButton">Share link</button>
+        <button class="ghost" id="hideInvite">Hide</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card player">
+    <div class="track-title" id="trackTitle">No song yet</div>
+    <div class="track-sub" id="trackSub">Add songs below to get started.</div>
+    <input type="range" id="seek" min="0" max="1" step="0.1" value="0" aria-label="Song position">
+    <div class="times"><span id="elapsed">0:00</span><span id="duration">0:00</span></div>
+    <div class="transport">
+      <button class="round" id="prevButton" aria-label="Previous song"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12 18 6v12z"/></svg></button>
+      <button class="round primary huge" id="playButton" aria-label="Play"><svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5v14l11-7z"/></svg></button>
+      <button class="round" id="nextButton" aria-label="Next song"><svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg></button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Songs</h2>
+      <label class="button" id="addSongs" hidden>Add songs<input type="file" id="fileInput" accept="audio/*,.mp3,.m4a,.aac,.wav,.flac,.ogg" multiple hidden></label>
+    </div>
+    <ul class="list" id="trackList"></ul>
+    <p class="hint" id="songsHint"></p>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Devices</h2><span class="count" id="deviceCount"></span></div>
+    <ul class="list devices" id="deviceList"></ul>
+    <p class="hint">Delay holds a device back or moves it earlier to match the others; Auto-sync sets it for you. <b>L</b> / <b>R</b> make two devices act like a pair of earphones.</p>
+  </section>
+
+  <section class="card">
+    <h2>Sync</h2>
+    <div class="row wrap">
+      <button class="primary" id="autoSyncButton">Auto-sync with this device's mic</button>
+      <button id="clickButton">Sync test</button>
+    </div>
+    <p class="sync-status" id="syncStatus"></p>
+    <p class="hint">Pause the music, keep the room quiet and hold this device where you'll be listening. Each device chirps in turn. Use a device that isn't playing through Bluetooth to listen: turning on an iPhone's mic can move its sound off a Bluetooth speaker.</p>
+  </section>
+
+  <p class="footnote">Keep SpeakerSync open with the screen on: phones pause web audio when locked. Songs stay on your devices and are sent directly between them.</p>
+</main>
+
+<div class="overlay" id="tapOverlay" hidden>
+  <div class="card">
+    <h2 id="tapTitle">Join room</h2>
+    <p>Tap to connect. Your browser needs a tap before it may play sound.</p>
+    <button class="primary big" id="tapButton">Join</button>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="logo" viewBox="0 0 64 64">
+    <rect x="6" y="14" width="20" height="36" rx="6" fill="currentColor" opacity=".9"/>
+    <circle cx="16" cy="38" r="6" fill="var(--card)"/>
+    <circle cx="16" cy="23" r="2.5" fill="var(--card)"/>
+    <rect x="38" y="14" width="20" height="36" rx="6" fill="currentColor" opacity=".9"/>
+    <circle cx="48" cy="38" r="6" fill="var(--card)"/>
+    <circle cx="48" cy="23" r="2.5" fill="var(--card)"/>
+    <path d="M28 32h8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+  </symbol>
+</svg>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
